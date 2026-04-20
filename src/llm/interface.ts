@@ -8,4 +8,5 @@ export interface ILLMProvider {
     hint?: string
   ): Promise<LLMExtractionResult>;
   repair(rawResponse: string): Promise<LLMExtractionResult>;
+  validate(prompt: string): Promise<string>;
 }

@@ -232,4 +232,37 @@ export class AnthropicProvider implements ILLMProvider {
       throw toRetryableError(error);
     }
   }
+
+  async validate(prompt: string): Promise<string> {
+    try {
+      const response = await this.client.messages.create(
+        {
+          model: this.model,
+          max_tokens: 4096,
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        },
+        {
+          signal: AbortSignal.timeout(30000),
+          timeout: 30000
+        }
+      );
+
+      const raw = getTextContent(response.content);
+      const parsed = repairJson(raw);
+
+      if (!parsed) {
+        throw new Error("LLM_JSON_PARSE_FAIL");
+      }
+
+      // Return the JSON string, not the parsed object
+      return JSON.stringify(parsed);
+    } catch (error) {
+      throw toRetryableError(error);
+    }
+  }
 }
