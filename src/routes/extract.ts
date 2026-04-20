@@ -2,7 +2,11 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { Extraction } from "../db/models/Extraction.js";
+import { Job } from "../db/models/Job.js";
 import { Session } from "../db/models/Session.js";
+import { extractionQueue } from "../queue/index.js";
+import type { JobPayload } from "../queue/worker.js";
+import { rateLimiter } from "../middleware/rateLimiter.js";
 import { upload } from "../middleware/upload.js";
 import {
   extractionService,
