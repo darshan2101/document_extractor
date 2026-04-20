@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/darshan2101/document_extractor#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "@types/express": "^5.0.3",
     "@types/multer": "^2.0.0",
     "@types/uuid": "^10.0.0",
