@@ -1,0 +1,52 @@
+{
+  "name": "document_extractor",
+  "version": "1.0.0",
+  "description": "Smart Maritime Document Extractor (SMDE)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darshan2101/document_extractor.git"
+  },
+  "keywords": [
+    "Node.js",
+    "LLM",
+    "BullMQ",
+    "SQLite"
+  ],
+  "author": "Darshan Babariya",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/darshan2101/document_extractor/issues"
+  },
+  "homepage": "https://github.com/darshan2101/document_extractor#readme",
+  "dependencies": {
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/uuid": "^10.0.0",
+    "bullmq": "^5.58.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "ioredis": "^5.8.1",
+    "multer": "^2.0.2",
+    "pino": "^10.0.0",
+    "sequelize": "^6.37.7",
+    "sequelize-typescript": "^2.1.6",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
