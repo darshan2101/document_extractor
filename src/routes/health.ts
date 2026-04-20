@@ -1,12 +1,14 @@
 import { Router } from "express";
 
 import { sequelize } from "../db/index.js";
+import { getLLMProvider } from "../llm/index.js";
 import { queueConnection } from "../queue/index.js";
 
 const router = Router();
 
 router.get("/health", async (_request, response) => {
   let databaseStatus = "OK";
+  let llmProviderStatus = "OK";
   let queueStatus = "OK";
 
   try {
@@ -16,12 +18,17 @@ router.get("/health", async (_request, response) => {
   }
 
   try {
+    getLLMProvider();
+  } catch {
+    llmProviderStatus = "ERROR";
+  }
+
+  try {
     await queueConnection.ping();
   } catch {
     queueStatus = "ERROR";
   }
 
-  const llmProviderStatus = "OK";
   const overallStatus =
     databaseStatus === "OK" &&
     queueStatus === "OK" &&
