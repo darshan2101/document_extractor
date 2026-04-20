@@ -61,6 +61,10 @@ export class Job extends Model<Job> {
   declare rawLlmResponse: string | null;
 
   @AllowNull(true)
+  @Column(DataType.BOOLEAN)
+  declare retryable: boolean | null;
+
+  @AllowNull(true)
   @Column(DataType.STRING)
   declare webhookUrl: string | null;
 

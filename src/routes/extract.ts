@@ -24,17 +24,8 @@ const createErrorResponse = (error: string, message: string) => ({
   retryAfterMs: null
 });
 
-router.post("/extract", upload, async (request, response) => {
+router.post("/extract", rateLimiter, upload, async (request, response) => {
   const mode = typeof request.query.mode === "string" ? request.query.mode : "sync";
-
-  if (mode === "async") {
-    response
-      .status(501)
-      .json(
-        createErrorResponse("NOT_IMPLEMENTED", "Async extraction is not implemented yet.")
-      );
-    return;
-  }
 
   if (!request.file) {
     response
@@ -85,6 +76,43 @@ router.post("/extract", upload, async (request, response) => {
     return;
   }
 
+  // Async mode handling
+  if (mode === "async") {
+    const jobId = uuidv4();
+
+    // Create Job record with status QUEUED
+    await Job.create({
+      id: jobId,
+      sessionId,
+      status: "QUEUED",
+      queuedAt: new Date()
+    });
+
+    // Prepare payload with serialized buffer
+    const payload: JobPayload = {
+      fileBuffer: Array.from(request.file.buffer),
+      mimeType: request.file.mimetype,
+      fileName: request.file.originalname,
+      sessionId,
+      fileHash,
+      jobId
+    };
+
+    // Add job to BullMQ queue
+    await extractionQueue.add("process-extraction", payload);
+
+    // Return 202 Accepted
+    response.status(202).json({
+      jobId,
+      sessionId,
+      status: "QUEUED",
+      pollUrl: `/api/jobs/${jobId}`,
+      estimatedWaitMs: 6000
+    });
+    return;
+  }
+
+  // Sync mode handling
   try {
     const extraction = await extractionService.runExtraction(request.file, sessionId);
     response.status(200).json(extraction);
