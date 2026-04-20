@@ -140,9 +140,31 @@ export class AnthropicProvider implements ILLMProvider {
   async extract(
     fileBuffer: Buffer,
     mimeType: string,
-    fileName: string
+    fileName: string,
+    hint?: string
   ): Promise<LLMExtractionResult> {
     try {
+      const prompt = hint ? `${EXTRACTION_PROMPT}\n\n${hint}` : EXTRACTION_PROMPT;
+      const fileContentBlock =
+        mimeType === "application/pdf"
+          ? {
+              type: "document" as const,
+              source: {
+                type: "base64" as const,
+                media_type: "application/pdf" as const,
+                data: fileBuffer.toString("base64")
+              },
+              title: fileName
+            }
+          : {
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: fileBuffer.toString("base64")
+              }
+            };
+
       const response = await this.client.messages.create(
         {
           model: this.model,
@@ -151,17 +173,10 @@ export class AnthropicProvider implements ILLMProvider {
             {
               role: "user",
               content: [
-                {
-                  type: "image",
-                  source: {
-                    type: "base64",
-                    media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                    data: fileBuffer.toString("base64")
-                  }
-                },
+                fileContentBlock,
                 {
                   type: "text",
-                  text: EXTRACTION_PROMPT
+                  text: prompt
                 }
               ]
             }

@@ -4,7 +4,8 @@ export interface ILLMProvider {
   extract(
     fileBuffer: Buffer,
     mimeType: string,
-    fileName: string
+    fileName: string,
+    hint?: string
   ): Promise<LLMExtractionResult>;
   repair(rawResponse: string): Promise<LLMExtractionResult>;
 }

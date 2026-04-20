@@ -37,8 +37,11 @@ The server starts on `http://localhost:3000` unless `PORT` is overridden.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Returns uptime plus database, queue, and LLM config health |
+| POST | `/api/extract` | Accepts one uploaded document and runs the synchronous extraction path |
 
-Planned routes such as extraction, job polling, session validation, and reporting are not wired yet in the current codebase.
+`POST /api/extract` expects multipart form data with a single file field named `document`. Optional `sessionId` may be sent in the form body. `?mode=async` currently returns `501 Not Implemented`.
+
+Planned routes such as job polling, session validation, and reporting are not wired yet in the current codebase.
 
 ## Running Tests
 
