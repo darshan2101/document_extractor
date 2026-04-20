@@ -1,91 +1,72 @@
-## Code Review: feat/add-document-extraction-endpoint
+## Code Review: `feat/add-document-extraction-endpoint`
 
-Good first pass at getting something working end-to-end. The instinct to validate the file early and wrap the handler in try/catch is right. The problems here are not cosmetic, though. Several of them are the kind of thing that causes a production incident or a security finding, so I want to walk through them before this merges.
+This is a useful first pass because you proved the happy path quickly, but it is not merge-ready yet. The main problems are around security, data handling, and operational safety rather than style. I want you to keep the momentum from this PR, but the next revision needs to separate "it worked once locally" from "this is safe and supportable in a backend service."
 
----
-
-**Line 7: hardcoded API key**
+**Line 7**
 
 ```ts
 const client = new Anthropic({ apiKey: 'sk-ant-REDACTED' });
 ```
 
-This is the most urgent thing to fix. Even redacted before review, the pattern of putting a secret in source code is dangerous, because it means the development habit is wrong. If a real key ever lands here and gets committed, it is compromised immediately regardless of who has access to the repo. Secrets belong in environment variables, loaded through centralized config at startup. The key should be `process.env.ANTHROPIC_API_KEY` or equivalent, and the service should refuse to start if it is missing.
+Hardcoded secrets are a stop-ship issue. Even if the key was redacted before review, the coding pattern is still unsafe. Load secrets from environment variables through a config module and fail fast at startup when they are missing. If a real key ever lived in this file, rotate it immediately.
 
----
+**Lines 7 and 21**
 
-**Model selection**
+```ts
+const client = new Anthropic({ apiKey: 'sk-ant-REDACTED' });
+model: 'claude-opus-4-6',
+```
 
-`claude-opus-4-6` is the most expensive model in the Claude lineup, roughly 15 times the cost of Haiku per token. For structured document extraction with a fixed output schema, there is no demonstrated reason to start there. Model selection should be a justified decision tied to accuracy requirements, not a default to the most capable option. Start with Haiku, measure whether it meets accuracy requirements on your real documents, and escalate only if there is evidence it falls short. Unconstrained model choice here would make this service economically unviable at any real volume.
+The model choice is not justified. Opus is the most expensive Claude tier, and this task is structured extraction, not open-ended reasoning. Starting with the most expensive model without evidence is a product risk, not a code detail. Use a configurable model and default to the cheapest model that meets accuracy targets.
 
----
-
-**Line 13: synchronous file read**
+**Line 13**
 
 ```ts
 const fileData = fs.readFileSync(file.path);
 ```
 
-`readFileSync` blocks the event loop for the duration of the disk read. Every other request the process is handling waits. For a file upload route, this gets noticeable quickly under any real concurrency. Use `fs.promises.readFile` or `fs.createReadStream` instead.
+This blocks the Node event loop. One slow disk read stalls unrelated requests handled by the same process. Use async file APIs so the route does not serialize concurrent traffic behind synchronous I/O.
 
----
-
-**Lines 16-17: permanent file storage with predictable names**
+**Lines 15-16**
 
 ```ts
 const savedPath = path.join('./uploads', file.originalname);
 fs.copyFileSync(file.path, savedPath);
 ```
 
-Maritime documents frequently contain PII: passport photos, medical data, national ID numbers. Saving them to disk at a predictable path derived from the original filename creates a permanent store of sensitive data with no retention policy, no access control, and paths that are easy to enumerate. In production, uploaded files should either be processed in memory and discarded, or stored in controlled object storage with generated names, explicit lifecycle rules, and restricted access. This is a privacy and security problem, not just a cleanup issue.
+This is a serious data-handling problem. You are writing potentially sensitive maritime identity and medical documents to disk with predictable names, no cleanup, no retention policy, and no access control. That creates privacy risk immediately. If the file does not need to persist, keep it in memory. If it does, use generated names and controlled storage.
 
----
+**Route section around `req.file`**
 
-**No file type validation**
+There is no file type validation before the content is read and sent to the model. The handler should reject unsupported or unsafe MIME types before doing any disk or model work. Without that check, the endpoint will accept arbitrary input and waste money on files the provider cannot handle correctly.
 
-The handler accepts whatever `req.file` contains. A production extraction endpoint should reject anything that is not jpeg, png, or pdf before processing, both to protect cost and to prevent the LLM from receiving arbitrary file types. Validate MIME type and size at the middleware layer, not inside the handler.
-
----
-
-**Prompt**
+**Prompt text block**
 
 ```ts
-text: 'Extract all information from this maritime document and return as JSON.'
+text: 'Extract all information from this maritime document and return as JSON.',
 ```
 
-This prompt gives the LLM no schema, no document taxonomy, no field names, and no null-handling instructions. The output will vary by document type, by run, and by model version. When you go to parse and store the result, you will find a different JSON shape for every document you tested. A production extraction prompt needs a defined response contract: required keys, optional fields, a document type taxonomy, and explicit instructions about what to return when a field is absent. The prompt is where consistency is enforced, and right now there is none.
+This prompt is too vague to support reliable downstream parsing. There is no schema, no taxonomy, no null-handling rule, and no definition of what "all information" means across passports, certificates, and medical records. The result will drift by document type and by model run. If the backend needs structured data, the prompt needs to define the structure explicitly.
 
----
+**Anthropic call**
 
-**No timeout on the LLM call**
+There is no timeout on the LLM request. If the provider stalls or the network hangs, this request can sit open indefinitely. External calls need a fixed timeout and a failure path that distinguishes provider issues from parsing issues.
 
-If Anthropic's API is slow or the network stalls, this request hangs indefinitely. One slow response ties up a worker for minutes. Every external call needs a timeout and a clear failure path. Set a 30-second `AbortSignal` on the fetch and handle the timeout case explicitly, not through the generic catch.
-
----
-
-**Lines 27-29: JSON parse without a fallback**
+**Line 27**
 
 ```ts
 const result = JSON.parse(response.content[0].text);
 ```
 
-LLM responses frequently include markdown fences, preamble text, or truncated JSON. `JSON.parse` will throw on any of those. Right now that falls into the outer catch, returns a generic 500, and discards the original model output permanently. You need to preserve the raw response regardless of whether parsing succeeds, because it is the only thing you can use to debug or repair the failure. Extract JSON from the raw string first, attempt to parse, and on failure store the raw response with a FAILED status before returning an error.
+This assumes the LLM always returns clean JSON. In practice, responses often include preamble text, markdown fences, or malformed JSON. When parse fails here, the outer catch converts it into a generic 500 and the raw model output is lost. Preserve the raw response first, then run a controlled JSON extraction and repair step.
 
----
-
-**Lines 31-33: global state**
+**Lines 28-29**
 
 ```ts
 global.extractions = global.extractions || [];
 global.extractions.push(result);
 ```
 
-Data on `global` disappears on process restart, is not queryable, and breaks immediately if there is more than one server instance. This has to go into the database with an ID, a session reference, timestamps, and a status field. That is the only way polling, deduplication, session listing, and retry logic can work. There is no path from `global.extractions` to those features.
+`global` is not application storage. The data disappears on restart, cannot be queried, and breaks the moment you run more than one process. This needs to be stored in the database with IDs, timestamps, and status so later features such as deduplication, job polling, and session reporting are even possible.
 
----
-
-**Teaching moment**
-
-The reason so many of these problems cluster together is that the handler is doing everything: reading a file, saving it, calling an external API, parsing the response, and persisting the result. When one function is responsible for that many things, there is no layer where you can add a timeout, a retry, a fallback, or a different storage strategy without touching everything else.
-
-The way out is to split the flow into stages with defined responsibilities: validate the input, hand the file buffer to an extraction service, let the service call the provider and handle failures, and let a storage layer decide where the result goes. Each stage can be tested independently. Each can be changed without touching the others. That structure is what makes the handler code simple, even as the system gets more complex.
+Teaching moment: whenever one route is handling file I/O, external API calls, parsing, and persistence all at once, hidden failures get harder to isolate and easier to ship. Split the flow into layers early. The code gets easier to test, and production bugs stop being mysteries.

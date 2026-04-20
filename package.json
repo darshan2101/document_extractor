@@ -31,9 +31,6 @@
   "homepage": "https://github.com/darshan2101/document_extractor#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
-    "@types/express": "^5.0.3",
-    "@types/multer": "^2.0.0",
-    "@types/uuid": "^10.0.0",
     "bullmq": "^5.58.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
@@ -47,6 +44,9 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"

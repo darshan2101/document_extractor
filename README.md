@@ -1,42 +1,46 @@
 # SMDE
 
-Smart Maritime Document Extractor. Accepts maritime certification documents, runs them through an LLM extraction pipeline, and returns structured compliance data.
+Smart Maritime Document Extractor backend.
 
 ## Prerequisites
 
 - Node.js 20+
-- Docker (for Redis)
+- Docker with `docker compose`
 
-## Setup
+## Environment Setup
 
-```bash
-git clone https://github.com/darshan2101/document_extractor.git
-cd document_extractor && npm install
-cp .env.example .env
-```
+Copy `.env.example` to `.env` and set:
 
-Edit `.env` and fill in `LLM_PROVIDER`, `LLM_MODEL`, and `LLM_API_KEY`. Everything else has defaults for local development. `DATABASE_URL` defaults to `./dev.sqlite` if left blank.
+- `NODE_ENV`
+- `REDIS_URL`
+- `LLM_PROVIDER`
+- `LLM_MODEL`
+- `LLM_API_KEY`
+
+Optional:
+
+- `PORT` defaults to `3000`
+- `DATABASE_URL` defaults to `./dev.sqlite`
 
 ## Run
 
 ```bash
-docker compose up -d && npm run dev
+git clone https://github.com/darshan2101/document_extractor.git
+cd document_extractor && npm install
+cp .env.example .env && docker compose up -d && npm run dev
 ```
 
-Service starts on `http://localhost:3000` (or `PORT` from your `.env`).
+The server starts on `http://localhost:3000` unless `PORT` is overridden.
 
-## Endpoints
+## Current API Surface
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/health` | Service status and dependency health |
-| POST | `/api/extract` | Upload a document for extraction (`?mode=sync` or `?mode=async`) |
-| GET | `/api/jobs/:jobId` | Poll the status of an async extraction job |
-| GET | `/api/sessions/:sessionId` | All extractions and pending jobs for a session |
-| POST | `/api/sessions/:sessionId/validate` | Cross-document compliance check via LLM |
-| GET | `/api/sessions/:sessionId/report` | Structured compliance report derived from stored data |
+| GET | `/api/health` | Returns uptime plus database, queue, and LLM config health |
 
-## Tests
+Planned routes such as extraction, job polling, session validation, and reporting are not wired yet in the current codebase.
+
+## Running Tests
 
 ```bash
 npm run test:unit
