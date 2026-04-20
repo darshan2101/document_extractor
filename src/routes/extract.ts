@@ -44,13 +44,10 @@ router.post("/extract", rateLimiter, upload, async (request, response) => {
       ? request.body.sessionId.trim()
       : null;
 
-  let sessionId = requestedSessionId;
+  let sessionId: string;
 
-  if (!sessionId) {
-    sessionId = uuidv4();
-    await Session.create({ id: sessionId });
-  } else {
-    const session = await Session.findByPk(sessionId);
+  if (requestedSessionId) {
+    const session = await Session.findByPk(requestedSessionId);
 
     if (!session) {
       response
@@ -60,6 +57,11 @@ router.post("/extract", rateLimiter, upload, async (request, response) => {
         );
       return;
     }
+    sessionId = requestedSessionId;
+  } else {
+    sessionId = uuidv4();
+    // Sequelize type system requires this escape hatch for partial attribute creation
+    await (Session.create as any)({ id: sessionId });
   }
 
   const fileHash = hashFile(request.file.buffer);
@@ -81,7 +83,8 @@ router.post("/extract", rateLimiter, upload, async (request, response) => {
     const jobId = uuidv4();
 
     // Create Job record with status QUEUED
-    await Job.create({
+    // Sequelize type system requires this escape hatch for partial attribute creation
+    await (Job.create as any)({
       id: jobId,
       sessionId,
       status: "QUEUED",
