@@ -39,7 +39,9 @@ The server starts on `http://localhost:3000` unless `PORT` is overridden.
 | GET | `/api/health` | Returns uptime plus database, queue, and LLM config health |
 | POST | `/api/extract` | Accepts one uploaded document; `?mode=sync` (default) runs synchronously, `?mode=async` enqueues for background processing |
 | GET | `/api/jobs/:jobId` | Poll extraction job status by ID; returns QUEUED, PROCESSING, COMPLETE, or FAILED state with metadata |
+| POST | `/api/jobs/:jobId/retry` | Re-queue a FAILED extraction job; rejects non-FAILED jobs with 409 |
 | GET | `/api/sessions/:sessionId` | Get session overview including aggregated documents, pending jobs, detected role, and health status |
+| GET | `/api/sessions/:sessionId/expiring` | List documents expiring within `?withinDays=90`; database query sorted by urgency |
 | POST | `/api/sessions/:sessionId/validate` | Cross-document compliance validation via LLM; returns structured assessment with required docs, expiring certs, medical flags, and overall approval status |
 | GET | `/api/sessions/:sessionId/report` | Generate a comprehensive report with document checklist, missing docs, expiry timeline, flags by severity, medical summary, and go-no-go determination; no LLM call, purely database-derived |
 
@@ -60,6 +62,14 @@ Poll the status of an extraction job. Returns:
 - `PROCESSING`: Job currently running; includes when it started and estimated completion time
 - `COMPLETE`: Extraction finished; includes full extraction result (documents, fields, flags, validity data)
 - `FAILED`: Job failed; includes error code, message, and whether the job is retryable
+
+### POST /api/jobs/:jobId/retry
+
+Re-queue a failed extraction job. Returns `409 CONFLICT` if the job is not in `FAILED` state. Returns `422 JOB_PAYLOAD_MISSING` if BullMQ has evicted the original payload. On success returns `202 Accepted` with the new `pollUrl`.
+
+### GET /api/sessions/:sessionId/expiring
+
+Returns documents expiring within the `withinDays` window (default: 90). This is a pure database query on the indexed `expiryDate` column — not an in-memory filter. Response includes `daysRemaining` and `urgency` tier (EXPIRED, HIGH ≤30d, MEDIUM ≤60d, LOW), sorted by urgency.
 
 ### GET /api/sessions/:sessionId
 
@@ -101,6 +111,16 @@ Use this endpoint for generating reports, PDF exports, or compliance dashboards.
 
 ## Running Tests
 
+Unit tests (JSON repair logic):
+
 ```bash
 npm run test:unit
 ```
+
+Integration tests — import `tests/smde.postman_collection.json` into Postman or run with Newman:
+
+```bash
+npx newman run tests/smde.postman_collection.json --env-var "base_url=http://localhost:3000"
+```
+
+Most integration test requests require a real file upload. Attach any JPEG, PNG, or PDF to the `document` field of the sync extract request; subsequent requests use the `session_id` variable captured from that response.

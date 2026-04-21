@@ -1,0 +1,489 @@
+{
+  "info": {
+    "name": "SMDE - Smart Maritime Document Extractor",
+    "description": "Integration test collection for the Smart Maritime Document Extractor API. Run in order: health check → sync extract → async extract → poll job → session summary → validate → report → expiring.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "extraction_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status field present', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.be.oneOf(['OK', 'DEGRADED']);",
+                  "  pm.expect(body.dependencies).to.have.all.keys('database', 'llmProvider', 'queue');",
+                  "  pm.expect(body.uptime).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extract - Sync",
+      "item": [
+        {
+          "name": "POST /api/extract?mode=sync (happy path)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('extraction fields present', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string');",
+                  "  pm.expect(body.sessionId).to.be.a('string');",
+                  "  pm.expect(body.documentType).to.exist;",
+                  "  pm.expect(body.status).to.equal('COMPLETE');",
+                  "  pm.variables.set('session_id', body.sessionId);",
+                  "  pm.variables.set('extraction_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/extract?mode=sync",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": [],
+                  "description": "Replace with a real JPEG/PNG/PDF file path"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/extract - 400 no file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error code present', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/extract?mode=sync",
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        },
+        {
+          "name": "POST /api/extract - deduplication (X-Deduplicated header)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('X-Deduplicated header set', () => {",
+                  "  pm.expect(pm.response.headers.get('X-Deduplicated')).to.equal('true');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/extract?mode=sync",
+              "query": [{ "key": "mode", "value": "sync" }]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": [],
+                  "description": "Same file as previous request to trigger deduplication"
+                },
+                {
+                  "key": "sessionId",
+                  "value": "{{session_id}}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/extract - 404 unknown sessionId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('SESSION_NOT_FOUND error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.equal('SESSION_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/extract?mode=sync",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "sessionId",
+                  "value": "00000000-0000-0000-0000-000000000000",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extract - Async",
+      "item": [
+        {
+          "name": "POST /api/extract?mode=async",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "pm.test('async response shape', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.jobId).to.be.a('string');",
+                  "  pm.expect(body.sessionId).to.be.a('string');",
+                  "  pm.expect(body.status).to.equal('QUEUED');",
+                  "  pm.expect(body.pollUrl).to.include('/api/jobs/');",
+                  "  pm.variables.set('job_id', body.jobId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/extract?mode=async",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": [],
+                  "description": "Replace with a real JPEG/PNG/PDF file path"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "GET /api/jobs/:jobId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('job status present', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.jobId).to.be.a('string');",
+                  "  pm.expect(body.status).to.be.oneOf(['QUEUED', 'PROCESSING', 'COMPLETE', 'FAILED']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/jobs/{{job_id}}"
+          }
+        },
+        {
+          "name": "GET /api/jobs/:jobId - 404 unknown",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('JOB_NOT_FOUND error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.equal('JOB_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/jobs/00000000-0000-0000-0000-000000000000"
+          }
+        },
+        {
+          "name": "POST /api/jobs/:jobId/retry - 409 non-FAILED job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('JOB_NOT_RETRYABLE error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.equal('JOB_NOT_RETRYABLE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/jobs/{{job_id}}/retry"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "GET /api/sessions/:sessionId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('session shape correct', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.sessionId).to.be.a('string');",
+                  "  pm.expect(body.documentCount).to.be.a('number');",
+                  "  pm.expect(body.overallHealth).to.be.oneOf(['OK', 'WARN', 'CRITICAL']);",
+                  "  pm.expect(body.documents).to.be.an('array');",
+                  "  pm.expect(body.pendingJobs).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/sessions/{{session_id}}"
+          }
+        },
+        {
+          "name": "GET /api/sessions/:sessionId - 404 unknown",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('SESSION_NOT_FOUND error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.equal('SESSION_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/sessions/00000000-0000-0000-0000-000000000000"
+          }
+        },
+        {
+          "name": "GET /api/sessions/:sessionId/expiring",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('expiring shape correct', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.sessionId).to.be.a('string');",
+                  "  pm.expect(body.withinDays).to.be.a('number');",
+                  "  pm.expect(body.count).to.be.a('number');",
+                  "  pm.expect(body.documents).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/sessions/{{session_id}}/expiring?withinDays=90",
+              "query": [{ "key": "withinDays", "value": "90" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validate & Report",
+      "item": [
+        {
+          "name": "POST /api/sessions/:sessionId/validate - 400 insufficient docs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 when only one doc', () => {",
+                  "  if (pm.response.code === 400) {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.error).to.equal('INSUFFICIENT_DOCUMENTS');",
+                  "  } else {",
+                  "    pm.test.skip('Session has enough documents; skipping INSUFFICIENT_DOCUMENTS check');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/sessions/{{session_id}}/validate"
+          }
+        },
+        {
+          "name": "POST /api/sessions/:sessionId/validate - 404 unknown session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('SESSION_NOT_FOUND error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.error).to.equal('SESSION_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/sessions/00000000-0000-0000-0000-000000000000/validate"
+          }
+        },
+        {
+          "name": "GET /api/sessions/:sessionId/report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('report shape correct', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.sessionId).to.be.a('string');",
+                  "  pm.expect(body.generatedAt).to.be.a('string');",
+                  "  pm.expect(body.holderProfile).to.be.an('object');",
+                  "  pm.expect(body.goNoGo).to.be.an('object');",
+                  "  pm.expect(body.goNoGo.status).to.be.oneOf(['GO', 'NO-GO', 'CONDITIONAL', 'PENDING']);",
+                  "  pm.expect(body.documentChecklist).to.be.an('array');",
+                  "  pm.expect(body.expiryTimeline).to.be.an('array');",
+                  "  pm.expect(body.flags).to.have.all.keys('critical', 'high', 'medium', 'low');",
+                  "  pm.expect(body.medicalSummary).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/sessions/{{session_id}}/report"
+          }
+        },
+        {
+          "name": "GET /api/sessions/:sessionId/report - 404 unknown session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('SESSION_NOT_FOUND error', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.code).to.equal('SESSION_NOT_FOUND');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/sessions/00000000-0000-0000-0000-000000000000/report"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -54,7 +54,7 @@ The schema promotes fields that need to be queryable, such as `documentType`, `s
 
 The hybrid approach is intentional. It is fine for early iterations and for storing raw extraction payloads, but it becomes a constraint once the product needs richer search and reporting. Queries such as "all sessions with expired COC" are only efficient today because some key attributes are promoted into indexed scalar columns. If the product grows into search by holder identity, compliance limitation, or extracted field content, the schema has to move further toward normalized relational tables and PostgreSQL-native JSONB indexing rather than leaning on stringified JSON forever.
 
-One known gap remains: `holder.photo` is part of the LLM contract but is not yet persisted in the `Extraction` table, so responses reconstructed from stored rows cannot preserve it accurately. That should be fixed in the next model revision.
+The `holder.photo` value from the LLM response is now persisted in the `holderPhoto` column on the `Extraction` table, so photo presence is surfaced correctly in extraction responses and in the compliance report's `holderProfile.photoPresent` field.
 
 ## Error Classification
 
@@ -71,7 +71,7 @@ The goal is that production logs can be queried by error code, and retry logic c
 The report endpoint at `GET /api/sessions/:sessionId/report` generates a comprehensive compliance report entirely from data already in the database. No LLM calls, no external dependencies — only read and aggregate.
 
 The service `generateReport(sessionId)` loads all COMPLETE extractions and the most recent validation record for the session, then derives:
-- **holderProfile**: Aggregated identity (name, DOB, nationality, rank) from extractions or validation result; photo presence flag (known gap: `holderPhoto` column not persisted, defaults to false)
+- **holderProfile**: Aggregated identity (name, DOB, nationality, rank) from extractions or validation result; `photoPresent` derived from the persisted `holderPhoto` column
 - **goNoGo**: Three-state determination (GO/NO-GO/CONDITIONAL/PENDING) mapped from validation `overallStatus`, plus the first recommendation as reason
 - **documentChecklist**: All extractions with status (PRESENT/EXPIRED/EXPIRING_SOON based on 90-day threshold), flag counts, and confidence scores
 - **missingDocuments**: Required documents list from validation result (empty if no validation)
@@ -92,6 +92,14 @@ Monitoring and alerting are also deferred. Pino logging exists, but metrics, tra
 
 Pagination is not yet implemented on session documents or validation history. For now, sessions are assumed to have a small number of extractions. If that assumption breaks, the GET `/api/sessions/:sessionId` response will need offset/limit parameters and the UI will need to handle multi-page results.
 
-Deduplication by file hash is not yet wired. The `hashFile()` utility exists but is not called during extraction. That is future work once the extraction contract stabilizes.
+Deduplication by file hash is implemented. When a file is uploaded, a SHA-256 hash is computed from the in-memory buffer and checked against existing extractions in the same session before any LLM call. A duplicate returns the original extraction with the `X-Deduplicated: true` header. The hash is indexed on `(fileHash, sessionId)` to make the lookup a single index scan rather than a full table scan.
 
 Rate limiting is currently implemented as an in-memory token bucket on `POST /api/extract`, capped at 10 requests per minute per IP. That is sufficient for single-instance local execution and assignment evaluation, but it is not a distributed or durable limit. Once multiple processes are in play, that policy should move to a shared store or edge layer.
+
+## Bonus Endpoints
+
+Two bonus endpoints are implemented:
+
+**`POST /api/jobs/:jobId/retry`** — Re-queues a failed extraction job. The route rejects any job not in `FAILED` state with a `409 CONFLICT`. For eligible jobs it resets the job record to `QUEUED`, recovers the original payload from BullMQ's job store, and re-enqueues using the same payload so the worker uses an identical extraction request on retry. If BullMQ has already evicted the job payload (e.g., after a long delay), the endpoint returns `422 JOB_PAYLOAD_MISSING` rather than silently enqueuing an empty job.
+
+**`GET /api/sessions/:sessionId/expiring?withinDays=90`** — Returns all documents in the session that expire within the given window, sorted by urgency. This is a pure database query using Sequelize `Op.lte` / `Op.gte` on the indexed `expiryDate` column, not an in-memory filter. The response includes both already-expired documents and documents expiring within the window, each annotated with `daysRemaining` and an `urgency` tier (EXPIRED, HIGH ≤30d, MEDIUM ≤60d, LOW).
