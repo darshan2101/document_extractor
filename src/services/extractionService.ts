@@ -74,6 +74,7 @@ type PersistedExtractionPayload = {
   passportNumber: string | null;
   rank: string | null;
   nationality: string | null;
+  holderPhoto: "PRESENT" | "ABSENT" | null;
   fieldsJson: string | null;
   validityJson: string | null;
   complianceJson: string | null;
@@ -173,6 +174,7 @@ const toPersistencePayload = (
     passportNumber: result.holder.passportNumber,
     rank: result.holder.rank,
     nationality: result.holder.nationality,
+    holderPhoto: result.holder.photo ?? null,
     fieldsJson: JSON.stringify(result.fields),
     validityJson: JSON.stringify(derivedValidity.validity),
     complianceJson: JSON.stringify(result.compliance),
@@ -215,7 +217,7 @@ export const formatExtractionResponse = (
       passportNumber: extraction.passportNumber,
       sirbNumber: extraction.sirbNumber,
       rank: extraction.rank,
-      photo: medicalData ? null : null
+      photo: extraction.holderPhoto
     },
     fields: parseJsonValue<LLMField[]>(extraction.fieldsJson) ?? [],
     validity,
@@ -265,7 +267,7 @@ export const extractionService = {
         }
       }
 
-      const extraction = await Extraction.create(
+      const extraction = await (Extraction.create as (v: PersistedExtractionPayload) => Promise<Extraction>)(
         toPersistencePayload(result, sessionId, file, Date.now() - startedAt)
       );
 
@@ -278,7 +280,7 @@ export const extractionService = {
             ? error.message
             : String(error);
 
-      const failedExtraction = await Extraction.create({
+      const failedExtraction = await (Extraction.create as (v: PersistedExtractionPayload) => Promise<Extraction>)({
         sessionId,
         fileName: file.originalname,
         fileHash: hashFile(file.buffer),
@@ -295,6 +297,7 @@ export const extractionService = {
         passportNumber: null,
         rank: null,
         nationality: null,
+        holderPhoto: null,
         fieldsJson: null,
         validityJson: null,
         complianceJson: null,

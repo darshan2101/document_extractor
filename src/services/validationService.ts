@@ -205,7 +205,8 @@ export const validationService = {
     >;
 
     // Step 7: Persist to validations table
-    await Validation.create({
+    // Sequelize type system requires this escape hatch for partial attribute creation
+    await (Validation.create as any)({
       sessionId,
       resultJson: validationJsonString
     });

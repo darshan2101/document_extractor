@@ -108,6 +108,10 @@ export class Extraction extends Model<Extraction> {
   declare nationality: string | null;
 
   @AllowNull(true)
+  @Column(DataType.STRING)
+  declare holderPhoto: "PRESENT" | "ABSENT" | null;
+
+  @AllowNull(true)
   @Column(DataType.TEXT)
   declare fieldsJson: string | null;
 

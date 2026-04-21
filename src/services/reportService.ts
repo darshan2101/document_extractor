@@ -207,10 +207,7 @@ export async function generateReport(
     }
   }
 
-  // Check if any extraction has photo present
-  // Known gap: holderPhoto column does not exist on Extraction model
-  // LLM returns holder.photo but it is not persisted; photoPresent defaults to false
-  let photoPresent = false;
+  const photoPresent = extractions.some((e) => e.holderPhoto === "PRESENT");
 
   // Get most recent passport number
   let passportNumber: string | null = null;
