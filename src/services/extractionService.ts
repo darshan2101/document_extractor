@@ -12,6 +12,7 @@ import type {
   LLMValidity
 } from "../types/index.js";
 import { hashFile } from "../utils/hashFile.js";
+import { parseDateToUtc, getTodayUtc, daysUntilExpiry } from "../utils/dates.js";
 
 type UploadedFile = Express.Multer.File;
 
@@ -97,41 +98,13 @@ const parseJsonValue = <T>(value: string | null): T | null => {
   return JSON.parse(value) as T;
 };
 
-const parseDateToUtc = (value: string | null): Date | null => {
-  if (!value || value === "No Expiry" || value === "Lifetime") {
-    return null;
-  }
-
-  const ddMmYyyyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
-  if (ddMmYyyyMatch) {
-    const [, day, month, year] = ddMmYyyyMatch;
-    return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return new Date(
-    Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate())
-  );
-};
-
-const getTodayUtc = (): Date => {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-};
-
 const getDerivedValidity = (
   validity: LLMValidity
 ): { validity: LLMValidity; isExpired: boolean; expiryDate: string | null } => {
   const parsedExpiry = parseDateToUtc(validity.dateOfExpiry);
   const today = getTodayUtc();
   const derivedDaysUntilExpiry =
-    parsedExpiry !== null
-      ? Math.ceil((parsedExpiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      : null;
+    parsedExpiry !== null ? daysUntilExpiry(parsedExpiry, today) : null;
   const isExpired = parsedExpiry !== null ? derivedDaysUntilExpiry !== null && derivedDaysUntilExpiry < 0 : false;
 
   return {

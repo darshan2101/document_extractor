@@ -82,13 +82,19 @@ router.post("/extract", rateLimiter, upload, async (request, response) => {
   if (mode === "async") {
     const jobId = uuidv4();
 
+    const webhookUrl =
+      typeof request.body.webhookUrl === "string" && request.body.webhookUrl.trim()
+        ? request.body.webhookUrl.trim()
+        : null;
+
     // Create Job record with status QUEUED
     // Sequelize type system requires this escape hatch for partial attribute creation
     await (Job.create as any)({
       id: jobId,
       sessionId,
       status: "QUEUED",
-      queuedAt: new Date()
+      queuedAt: new Date(),
+      webhookUrl
     });
 
     // Prepare payload with serialized buffer
@@ -98,7 +104,8 @@ router.post("/extract", rateLimiter, upload, async (request, response) => {
       fileName: request.file.originalname,
       sessionId,
       fileHash,
-      jobId
+      jobId,
+      webhookUrl
     };
 
     // Add job to BullMQ queue

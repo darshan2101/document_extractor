@@ -6,6 +6,8 @@ import { queueConnection } from "./index.js";
 import { Job } from "../db/models/Job.js";
 import { extractionService } from "../services/extractionService.js";
 import type { ExtractionServiceError } from "../services/extractionService.js";
+import { deliverWebhook } from "../utils/webhook.js";
+import { env } from "../config/env.js";
 
 const logger = pino({ name: "smde-worker" });
 
@@ -16,13 +18,14 @@ export interface JobPayload {
   sessionId: string;
   fileHash: string;
   jobId: string;
+  webhookUrl: string | null;
 }
 
 export const createExtractionWorker = (): Worker<JobPayload> => {
   const worker = new Worker<JobPayload>(
     "document-extraction",
     async (bullJob) => {
-      const { fileBuffer, mimeType, fileName, sessionId, jobId } = bullJob.data;
+      const { fileBuffer, mimeType, fileName, sessionId, jobId, webhookUrl } = bullJob.data;
 
       try {
         // Step 1: Update Job record status to PROCESSING
@@ -58,9 +61,26 @@ export const createExtractionWorker = (): Worker<JobPayload> => {
         job.completedAt = new Date();
         await job.save();
 
+        // Step 6: Fire webhook if configured — failure is logged but never crashes the job
+        if (webhookUrl) {
+          try {
+            await deliverWebhook(
+              webhookUrl,
+              { jobId, status: "COMPLETE", extractionId: extraction.id, result: extraction },
+              env.WEBHOOK_SECRET
+            );
+            logger.info({ jobId, webhookUrl }, "Webhook delivered");
+          } catch (webhookErr) {
+            logger.warn(
+              { jobId, webhookUrl, error: webhookErr instanceof Error ? webhookErr.message : String(webhookErr) },
+              "Webhook delivery failed — job result is still stored"
+            );
+          }
+        }
+
         return { success: true, extractionId: extraction.id };
       } catch (error) {
-        // Step 6: Update Job record on failure
+        // Step 7: Update Job record on failure
         const job = await Job.findByPk(jobId);
 
         if (job) {
@@ -71,6 +91,28 @@ export const createExtractionWorker = (): Worker<JobPayload> => {
           job.completedAt = new Date();
           job.retryable = serviceError.retryable ?? false;
           await job.save();
+
+          // Fire webhook on failure too
+          if (webhookUrl) {
+            try {
+              await deliverWebhook(
+                webhookUrl,
+                {
+                  jobId,
+                  status: "FAILED",
+                  error: job.errorCode,
+                  message: job.errorMessage,
+                  retryable: job.retryable
+                },
+                env.WEBHOOK_SECRET
+              );
+            } catch (webhookErr) {
+              logger.warn(
+                { jobId, webhookUrl, error: webhookErr instanceof Error ? webhookErr.message : String(webhookErr) },
+                "Webhook delivery failed on job failure"
+              );
+            }
+          }
         }
 
         logger.error(
@@ -99,4 +141,3 @@ export const createExtractionWorker = (): Worker<JobPayload> => {
 
   return worker;
 };
-

@@ -29,7 +29,12 @@ const envSchema = z.object({
   REDIS_URL: z.string().trim().min(1, "REDIS_URL is required."),
   LLM_PROVIDER: z.enum(["anthropic", "groq", "mistral", "openai"]),
   LLM_MODEL: z.string().trim().min(1, "LLM_MODEL is required."),
-  LLM_API_KEY: z.string().trim().min(1, "LLM_API_KEY is required.")
+  LLM_API_KEY: z.string().trim().min(1, "LLM_API_KEY is required."),
+  WEBHOOK_SECRET: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || "")
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
