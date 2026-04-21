@@ -27,7 +27,7 @@ const envSchema = z.object({
     .optional()
     .transform((value) => value || "./dev.sqlite"),
   REDIS_URL: z.string().trim().min(1, "REDIS_URL is required."),
-  LLM_PROVIDER: z.enum(["anthropic", "groq", "mistral", "openai"]),
+  LLM_PROVIDER: z.enum(["anthropic", "gemini", "groq", "mistral", "openai"]),
   LLM_MODEL: z.string().trim().min(1, "LLM_MODEL is required."),
   LLM_API_KEY: z.string().trim().min(1, "LLM_API_KEY is required."),
   WEBHOOK_SECRET: z

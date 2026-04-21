@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import type { ILLMProvider } from "./interface.js";
 import { AnthropicProvider } from "./providers/anthropic.js";
+import { GeminiProvider } from "./providers/gemini.js";
 import { GroqProvider } from "./providers/groq.js";
 
 export const getLLMProvider = (): ILLMProvider => {
@@ -8,6 +9,10 @@ export const getLLMProvider = (): ILLMProvider => {
 
   if (provider === "anthropic") {
     return new AnthropicProvider(apiKey, model);
+  }
+
+  if (provider === "gemini") {
+    return new GeminiProvider(apiKey, model);
   }
 
   if (provider === "groq") {
