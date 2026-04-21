@@ -53,6 +53,8 @@ Expects multipart form data with a single file field named `document`. Optional 
 
 **Async mode** (`?mode=async`): Returns `202 Accepted` immediately with a `jobId`, `sessionId`, and `pollUrl`. The extraction runs in the background via BullMQ. Job record is persisted to the database with status `QUEUED`, then transitions to `PROCESSING`, `COMPLETE`, or `FAILED` as the worker executes. Retryable failures are flagged on the job record.
 
+An optional `webhookUrl` form field can be sent with async requests. When provided, the worker POSTs the result to that URL on both success and failure, signed with `HMAC-SHA256` via the `X-SMDE-Signature: sha256=<hex>` header. Set `WEBHOOK_SECRET` in `.env` to enable signing.
+
 The route is rate-limited in memory to 10 requests per minute per IP.
 
 ### GET /api/jobs/:jobId

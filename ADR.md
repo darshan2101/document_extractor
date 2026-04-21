@@ -88,13 +88,33 @@ The report is cacheable and suitable for PDF generation, compliance dashboards, 
 
 Authentication is still intentionally absent. The service handles backend workflow concerns first and does not yet attempt identity, authorization, or tenant isolation. That is a deliberate omission, not an oversight. The same is true for cloud file storage: the codebase has utility support for hashing and parsing, but no S3-style storage layer is in place yet.
 
-Monitoring and alerting are also deferred. Pino logging exists, but metrics, tracing, and alerting policy do not. Multi-tenancy is out of scope because it would reshape queue fairness, schema boundaries, and auth in one step. Webhook HMAC signing remains on the skipped list as well. Uploaded files are handled in memory through `multer` rather than persisted to local disk.
+Monitoring and alerting are also deferred. Pino logging exists, but metrics, tracing, and alerting policy do not. Multi-tenancy is out of scope because it would reshape queue fairness, schema boundaries, and auth in one step. Uploaded files are handled in memory through `multer` rather than persisted to local disk.
 
 Pagination is not yet implemented on session documents or validation history. For now, sessions are assumed to have a small number of extractions. If that assumption breaks, the GET `/api/sessions/:sessionId` response will need offset/limit parameters and the UI will need to handle multi-page results.
 
 Deduplication by file hash is implemented. When a file is uploaded, a SHA-256 hash is computed from the in-memory buffer and checked against existing extractions in the same session before any LLM call. A duplicate returns the original extraction with the `X-Deduplicated: true` header. The hash is indexed on `(fileHash, sessionId)` to make the lookup a single index scan rather than a full table scan.
 
 Rate limiting is currently implemented as an in-memory token bucket on `POST /api/extract`, capped at 10 requests per minute per IP. That is sufficient for single-instance local execution and assignment evaluation, but it is not a distributed or durable limit. Once multiple processes are in play, that policy should move to a shared store or edge layer.
+
+## Prompt Versioning
+
+Every extraction record stores `promptVersion` (currently `"v1"`) alongside the raw LLM response. This is not cosmetic — it is a prerequisite for operating an LLM pipeline in production.
+
+Prompts change. When they do, the extraction schema can shift in ways that are subtle and hard to detect without a version anchor. A prompt change that improves detection of one document type can silently degrade another. Without `promptVersion`, a support ticket about a wrong field value has no starting point: you cannot tell whether the extraction used the current prompt or a previous one, making regression diagnosis a guess rather than a query.
+
+With `promptVersion` on every record, the practical operations become possible:
+- **Regression detection**: query `WHERE prompt_version = 'v1' AND document_type = 'COC'` and compare confidence distributions before and after a prompt change
+- **Selective re-extraction**: when a new prompt version ships, identify and re-run only the records that were extracted under an older version, rather than re-processing everything
+- **Audit trails**: compliance audits can show exactly which instructions the model was given when it produced a given result
+- **A/B testing**: run a shadow extraction with a candidate prompt against a live traffic sample and compare results side by side before promoting the new version
+
+The current implementation stores version as a plain string so the value can be bumped as a constant in one place (`PROMPT_VERSION` in `src/llm/providers/anthropic.ts`) without a schema migration.
+
+## Webhook Delivery
+
+Async jobs support an optional `webhookUrl` field on `POST /api/extract`. When provided, the BullMQ worker fires an HTTP `POST` to that URL on both `COMPLETE` and `FAILED` outcomes. The payload is signed with `HMAC-SHA256` using the `WEBHOOK_SECRET` environment variable and delivered via the `X-SMDE-Signature` header in `sha256=<hex>` format — the same convention used by GitHub and Stripe so consumers can use standard signature-verification libraries.
+
+The design decision that matters here: webhook failure is logged but never fails the job. The extraction result is already persisted in the database before the delivery attempt, so a non-responsive webhook URL cannot corrupt the job state or cause a retry storm. The caller can always fall back to polling `GET /api/jobs/:jobId` if the webhook is not received.
 
 ## Bonus Endpoints
 
