@@ -80,7 +80,7 @@ Return ONLY a valid JSON object. No markdown. No code fences. No preamble.
   "summary": "Two-sentence plain English summary of what this document confirms about the holder."
 }`;
 
-const REPAIR_PROMPT_PREFIX =
+export const REPAIR_PROMPT_PREFIX =
   "The following is a malformed JSON response from a document extraction task. Return only the corrected, valid JSON object. No explanation, no markdown.\n\nRaw response: ";
 
 type RetryableError = Error & { retryable?: boolean };
