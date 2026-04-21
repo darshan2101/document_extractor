@@ -13,6 +13,7 @@ import type {
 } from "../types/index.js";
 import { hashFile } from "../utils/hashFile.js";
 import { parseDateToUtc, getTodayUtc, daysUntilExpiry } from "../utils/dates.js";
+import { parseJsonValue } from "../utils/parseJson.js";
 
 type UploadedFile = Express.Multer.File;
 
@@ -88,14 +89,6 @@ type PersistedExtractionPayload = {
   processingTimeMs: number;
   promptVersion: string;
   status: string;
-};
-
-const parseJsonValue = <T>(value: string | null): T | null => {
-  if (!value) {
-    return null;
-  }
-
-  return JSON.parse(value) as T;
 };
 
 const getDerivedValidity = (

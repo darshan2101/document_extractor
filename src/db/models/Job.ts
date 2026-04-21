@@ -1,6 +1,5 @@
 import {
   AllowNull,
-  BelongsTo,
   Column,
   DataType,
   Default,
@@ -80,9 +79,4 @@ export class Job extends Model<Job> {
   @Column(DataType.DATE)
   declare completedAt: Date | null;
 
-  @BelongsTo(() => Session)
-  declare session?: Session;
-
-  @BelongsTo(() => Extraction)
-  declare extraction?: Extraction;
 }

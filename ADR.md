@@ -86,6 +86,8 @@ The report is cacheable and suitable for PDF generation, compliance dashboards, 
 
 ## What Was Skipped
 
+JSON parsing of stored `*Json` columns (`fieldsJson`, `validityJson`, etc.) uses a safe `parseJsonValue` wrapper that returns `null` on malformed input rather than throwing. Direct database writes always go through `JSON.stringify`, so malformed data requires manual DB intervention to produce — but the safe fallback is in place regardless.
+
 Authentication is still intentionally absent. The service handles backend workflow concerns first and does not yet attempt identity, authorization, or tenant isolation. That is a deliberate omission, not an oversight. The same is true for cloud file storage: the codebase has utility support for hashing and parsing, but no S3-style storage layer is in place yet.
 
 Monitoring and alerting are also deferred. Pino logging exists, but metrics, tracing, and alerting policy do not. Multi-tenancy is out of scope because it would reshape queue fairness, schema boundaries, and auth in one step. Uploaded files are handled in memory through `multer` rather than persisted to local disk.
