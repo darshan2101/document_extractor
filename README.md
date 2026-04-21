@@ -41,6 +41,7 @@ The server starts on `http://localhost:3000` unless `PORT` is overridden.
 | GET | `/api/jobs/:jobId` | Poll extraction job status by ID; returns QUEUED, PROCESSING, COMPLETE, or FAILED state with metadata |
 | GET | `/api/sessions/:sessionId` | Get session overview including aggregated documents, pending jobs, detected role, and health status |
 | POST | `/api/sessions/:sessionId/validate` | Cross-document compliance validation via LLM; returns structured assessment with required docs, expiring certs, medical flags, and overall approval status |
+| GET | `/api/sessions/:sessionId/report` | Generate a comprehensive report with document checklist, missing docs, expiry timeline, flags by severity, medical summary, and go-no-go determination; no LLM call, purely database-derived |
 
 ### POST /api/extract
 
@@ -81,6 +82,22 @@ Trigger cross-document compliance validation against maritime employment standar
 7. Overall employment eligibility
 
 Returns a structured assessment with holderProfile, consistency checks, missing/expiring documents, medical flags, and overall approval status (APPROVED, CONDITIONAL, or REJECTED).
+
+### GET /api/sessions/:sessionId/report
+
+Generate a comprehensive compliance report for a session. The report is entirely derived from the database — extractions and validations already stored — with no new LLM calls. Returns:
+- `holderProfile`: Identity data (name, DOB, nationality, rank) aggregated from extractions, with photo presence flag
+- `goNoGo`: Three-state summary (GO, NO-GO, CONDITIONAL, PENDING) based on validation result, plus first recommendation
+- `documentChecklist`: All extractions with status (PRESENT, EXPIRED, EXPIRING_SOON), flag and critical flag counts
+- `missingDocuments`: Required documents not found (from validation result)
+- `expiryTimeline`: All documents with expiry dates, sorted by expiry date (most urgent first)
+- `flags`: All compliance flags grouped by severity (CRITICAL, HIGH, MEDIUM, LOW) with document context
+- `medicalSummary`: PEME fitness result, drug test result, medical flags from validation
+- `complianceScore`: Overall score (0-100) from validation result
+- `recommendations`: All recommendations from validation
+- `validationSummary`: Plain English summary from validation; null if no validation exists
+
+Use this endpoint for generating reports, PDF exports, or compliance dashboards. Since it requires no external calls, response time is immediate and cacheable.
 
 ## Running Tests
 

@@ -66,6 +66,24 @@ The codebase now distinguishes error types:
 
 The goal is that production logs can be queried by error code, and retry logic can inspect the `retryable` flag before deciding whether to requeue.
 
+## Report Generation (Phase 8)
+
+The report endpoint at `GET /api/sessions/:sessionId/report` generates a comprehensive compliance report entirely from data already in the database. No LLM calls, no external dependencies — only read and aggregate.
+
+The service `generateReport(sessionId)` loads all COMPLETE extractions and the most recent validation record for the session, then derives:
+- **holderProfile**: Aggregated identity (name, DOB, nationality, rank) from extractions or validation result; photo presence flag (known gap: `holderPhoto` column not persisted, defaults to false)
+- **goNoGo**: Three-state determination (GO/NO-GO/CONDITIONAL/PENDING) mapped from validation `overallStatus`, plus the first recommendation as reason
+- **documentChecklist**: All extractions with status (PRESENT/EXPIRED/EXPIRING_SOON based on 90-day threshold), flag counts, and confidence scores
+- **missingDocuments**: Required documents list from validation result (empty if no validation)
+- **expiryTimeline**: All documents with expiry dates, sorted by urgency (earliest first), with days-remaining calculation using UTC dates
+- **flags**: All compliance flags from extractions, grouped by severity (CRITICAL, HIGH, MEDIUM, LOW) with document context
+- **medicalSummary**: Finds PEME and DRUG_TEST extractions, extracts medical results (`fitnessResult`, `drugTestResult`) from `medicalDataJson`, includes medical flags from validation
+- **complianceScore**: Overall score from validation result (null if no validation)
+- **recommendations**: Full recommendation list from validation (empty if no validation)
+- **validationSummary**: Plain-English summary from validation result (null if no validation)
+
+The report is cacheable and suitable for PDF generation, compliance dashboards, and audit trails. The service reuses the same role-derivation logic as Phase 6 (`deriveDetectedRole()`) so report conclusions are consistent with session aggregation.
+
 ## What Was Skipped
 
 Authentication is still intentionally absent. The service handles backend workflow concerns first and does not yet attempt identity, authorization, or tenant isolation. That is a deliberate omission, not an oversight. The same is true for cloud file storage: the codebase has utility support for hashing and parsing, but no S3-style storage layer is in place yet.
