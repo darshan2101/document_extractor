@@ -1,7 +1,8 @@
-# Graph Report - .  (2026-04-24)
+# Graph Report - document_extractor  (2026-04-24)
 
 ## Corpus Check
-- Corpus is ~21,262 words - fits in a single context window. You may not need a graph.
+- 40 files · ~35,247 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
 - 159 nodes · 260 edges · 19 communities detected
@@ -9,25 +10,25 @@
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Core Domain Models and Server|Core Domain Models and Server]]
-- [[_COMMUNITY_Gemini LLM Provider|Gemini LLM Provider]]
-- [[_COMMUNITY_Data Formatting and Report Utils|Data Formatting and Report Utils]]
-- [[_COMMUNITY_Date Utils and File Hashing|Date Utils and File Hashing]]
-- [[_COMMUNITY_Architecture Decision Records|Architecture Decision Records]]
-- [[_COMMUNITY_Async Pipeline and Assignment Context|Async Pipeline and Assignment Context]]
-- [[_COMMUNITY_LLM Provider Design and Document Taxonomy|LLM Provider Design and Document Taxonomy]]
-- [[_COMMUNITY_Anthropic LLM Provider|Anthropic LLM Provider]]
-- [[_COMMUNITY_Rate Limiter|Rate Limiter]]
-- [[_COMMUNITY_Webhook Delivery|Webhook Delivery]]
-- [[_COMMUNITY_Database Schema Design|Database Schema Design]]
-- [[_COMMUNITY_Error Handling|Error Handling]]
-- [[_COMMUNITY_Security Code Review Issues|Security Code Review Issues]]
-- [[_COMMUNITY_Error Classification|Error Classification]]
-- [[_COMMUNITY_Code Review Model Choice|Code Review Model Choice]]
-- [[_COMMUNITY_Code Review Blocking IO|Code Review Blocking IO]]
-- [[_COMMUNITY_Code Review PII Exposure|Code Review PII Exposure]]
-- [[_COMMUNITY_Code Review File Validation|Code Review File Validation]]
-- [[_COMMUNITY_Evaluation Criteria|Evaluation Criteria]]
+- [[_COMMUNITY_Community 0|Community 0]]
+- [[_COMMUNITY_Community 1|Community 1]]
+- [[_COMMUNITY_Community 2|Community 2]]
+- [[_COMMUNITY_Community 3|Community 3]]
+- [[_COMMUNITY_Community 4|Community 4]]
+- [[_COMMUNITY_Community 5|Community 5]]
+- [[_COMMUNITY_Community 6|Community 6]]
+- [[_COMMUNITY_Community 7|Community 7]]
+- [[_COMMUNITY_Community 8|Community 8]]
+- [[_COMMUNITY_Community 9|Community 9]]
+- [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
+- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 18|Community 18]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `repairJson()` - 11 edges
@@ -42,16 +43,16 @@
 10. `getTextContent()` - 4 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Sample Invoice Document (INV-10012, $1699.48)` --conceptually_related_to--> `SMDE Assignment â€” Maritime Manning Agent Use Case`  [AMBIGUOUS]
-  sample_data/invoice1.png → Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md
-- `Certificate of Competency â€” Samoya (COC PDF)` --conceptually_related_to--> `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)`  [INFERRED]
-  sample_data/COC_Samoya.pdf → Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md
-- `Passport â€” Samoya (PASSPORT PDF)` --conceptually_related_to--> `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)`  [INFERRED]
-  sample_data/PASSPORT_Samoya.pdf → Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md
-- `Pre-Employment Medical Examination â€” Samoya (PEME PDF)` --conceptually_related_to--> `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)`  [INFERRED]
-  sample_data/PEME_Samoya.pdf → Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md
-- `Seafarer's Identity and Record Book â€” Samoya (SIRB PDF)` --conceptually_related_to--> `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)`  [INFERRED]
-  sample_data/SIRB_Samoya.pdf → Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md
+- `SMDE Assignment â€” Maritime Manning Agent Use Case` --conceptually_related_to--> `Sample Invoice Document (INV-10012, $1699.48)`  [AMBIGUOUS]
+  Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md → sample_data/invoice1.png
+- `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)` --conceptually_related_to--> `Certificate of Competency â€” Samoya (COC PDF)`  [INFERRED]
+  Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md → sample_data/COC_Samoya.pdf
+- `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)` --conceptually_related_to--> `Passport â€” Samoya (PASSPORT PDF)`  [INFERRED]
+  Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md → sample_data/PASSPORT_Samoya.pdf
+- `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)` --conceptually_related_to--> `Pre-Employment Medical Examination â€” Samoya (PEME PDF)`  [INFERRED]
+  Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md → sample_data/PEME_Samoya.pdf
+- `Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.)` --conceptually_related_to--> `Seafarer's Identity and Record Book â€” Samoya (SIRB PDF)`  [INFERRED]
+  Senior Backend Engineer â€” Evaluation Assignment e94909805e8d82ea805481526a05317f.md → sample_data/SIRB_Samoya.pdf
 
 ## Hyperedges (group relationships)
 - **LLM Pipeline Reliability: JSON Repair + Prompt Versioning + Raw Response Preservation** — assignment_llm_reliability, adr_prompt_versioning, adr_anthropic_provider [INFERRED 0.85]
@@ -60,79 +61,79 @@
 
 ## Communities
 
-### Community 0 - "Core Domain Models and Server"
+### Community 0 - "Community 0"
 Cohesion: 0.15
 Nodes (7): Extraction, initializeDatabase(), Job, startServer(), Session, Validation, createExtractionWorker()
 
-### Community 1 - "Gemini LLM Provider"
+### Community 1 - "Community 1"
 Cohesion: 0.18
 Nodes (8): GeminiProvider, toExtractionResult(), toRetryableError(), GroqProvider, toExtractionResult(), toRetryableError(), extractJson(), repairJson()
 
-### Community 2 - "Data Formatting and Report Utils"
+### Community 2 - "Community 2"
 Cohesion: 0.16
 Nodes (9): formatExtractionResponse(), parseJsonValue(), deriveDetectedRole(), generateReport(), deriveOverallHealth(), getCriticalDocumentTypes(), getTodayUtc(), isWithin90Days() (+1 more)
 
-### Community 3 - "Date Utils and File Hashing"
+### Community 3 - "Community 3"
 Cohesion: 0.21
 Nodes (6): daysUntilExpiry(), getTodayUtc(), parseDateToUtc(), getDerivedValidity(), toPersistencePayload(), hashFile()
 
-### Community 4 - "Architecture Decision Records"
+### Community 4 - "Community 4"
 Cohesion: 0.14
 Nodes (17): Bonus Endpoints (Retry and Expiry), BullMQ Queue System, SHA-256 File Deduplication, Prompt Versioning Strategy, BullMQ Queue Choice Decision, In-Memory Token Bucket Rate Limiting, Rationale: Async as Default (LLM latency unbounded), Rationale: BullMQ over in-process queue (durability, retries, stall recovery) (+9 more)
 
-### Community 5 - "Async Pipeline and Assignment Context"
+### Community 5 - "Community 5"
 Cohesion: 0.13
 Nodes (16): Async Extraction Path (Phase 5), createExtractionWorker Function, Job Polling and Session Aggregation (Phase 6), Overall Health Derivation (CRITICAL/WARN/OK), Report Generation (Phase 8), SMDE Assignment â€” Maritime Manning Agent Use Case, Sample Invoice Document (INV-10012, $1699.48), GET /api/sessions/:sessionId/expiring Endpoint (+8 more)
 
-### Community 6 - "LLM Provider Design and Document Taxonomy"
+### Community 6 - "Community 6"
 Cohesion: 0.14
 Nodes (14): Anthropic LLM Provider Implementation, Cross-Document Compliance Validation (Phase 7), ILLMProvider Interface, LLM Provider Abstraction, Maritime Document Type Taxonomy (COC, SIRB, PASSPORT, PEME, etc.), LLM Extraction Prompt (Canonical Maritime Document Taxonomy), Supported LLM Providers (Anthropic, Gemini, Groq, Mistral, OpenAI, Ollama), LLM Reliability Requirements (JSON repair, timeout, retry, never discard) (+6 more)
 
-### Community 7 - "Anthropic LLM Provider"
+### Community 7 - "Community 7"
 Cohesion: 0.43
 Nodes (4): AnthropicProvider, getTextContent(), toExtractionResult(), toRetryableError()
 
-### Community 8 - "Rate Limiter"
+### Community 8 - "Community 8"
 Cohesion: 0.7
 Nodes (4): getClientIp(), getRefilledBucket(), getRetryAfterMs(), rateLimiter()
 
-### Community 9 - "Webhook Delivery"
+### Community 9 - "Community 9"
 Cohesion: 0.67
 Nodes (2): deliverWebhook(), signPayload()
 
-### Community 10 - "Database Schema Design"
+### Community 10 - "Community 10"
 Cohesion: 0.5
 Nodes (4): Rationale: Hybrid Schema (queryability vs flexibility tradeoff), Hybrid Schema Design (Promoted + JSON columns), Suggested Database Schema (Sessions, Extractions, Jobs, Validations), Code Review Issue: Global State for Storage
 
-### Community 11 - "Error Handling"
+### Community 11 - "Community 11"
 Cohesion: 1.0
 Nodes (2): createErrorResponse(), errorHandler()
 
-### Community 12 - "Security Code Review Issues"
+### Community 12 - "Community 12"
 Cohesion: 1.0
 Nodes (2): Code Review Issue: Hardcoded API Key, Code Review Issue: No Timeout on LLM Request
 
-### Community 13 - "Error Classification"
+### Community 13 - "Community 13"
 Cohesion: 1.0
 Nodes (1): Error Classification System
 
-### Community 14 - "Code Review Model Choice"
+### Community 14 - "Community 14"
 Cohesion: 1.0
 Nodes (1): Code Review Issue: Unjustified Opus Model Choice
 
-### Community 15 - "Code Review Blocking IO"
+### Community 15 - "Community 15"
 Cohesion: 1.0
 Nodes (1): Code Review Issue: Synchronous File Read Blocking Event Loop
 
-### Community 16 - "Code Review PII Exposure"
+### Community 16 - "Community 16"
 Cohesion: 1.0
 Nodes (1): Code Review Issue: PII Written to Disk with Predictable Names
 
-### Community 17 - "Code Review File Validation"
+### Community 17 - "Community 17"
 Cohesion: 1.0
 Nodes (1): Code Review Issue: No MIME Type Validation
 
-### Community 18 - "Evaluation Criteria"
+### Community 18 - "Community 18"
 Cohesion: 1.0
 Nodes (1): Evaluation Criteria (Technical 50%, Architecture 25%, Leadership 25%)
 
@@ -143,23 +144,23 @@ Nodes (1): Evaluation Criteria (Technical 50%, Architecture 25%, Leadership 25%)
 ## Knowledge Gaps
 - **33 isolated node(s):** `Extraction`, `Job`, `Session`, `Validation`, `Error Classification System` (+28 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Webhook Delivery`** (4 nodes): `webhook.ts`, `webhook.test.ts`, `deliverWebhook()`, `signPayload()`
+- **Thin community `Community 9`** (4 nodes): `webhook.ts`, `webhook.test.ts`, `deliverWebhook()`, `signPayload()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Error Handling`** (3 nodes): `createErrorResponse()`, `errorHandler()`, `errorHandler.ts`
+- **Thin community `Community 11`** (3 nodes): `createErrorResponse()`, `errorHandler()`, `errorHandler.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Security Code Review Issues`** (2 nodes): `Code Review Issue: Hardcoded API Key`, `Code Review Issue: No Timeout on LLM Request`
+- **Thin community `Community 12`** (2 nodes): `Code Review Issue: Hardcoded API Key`, `Code Review Issue: No Timeout on LLM Request`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Error Classification`** (1 nodes): `Error Classification System`
+- **Thin community `Community 13`** (1 nodes): `Error Classification System`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Code Review Model Choice`** (1 nodes): `Code Review Issue: Unjustified Opus Model Choice`
+- **Thin community `Community 14`** (1 nodes): `Code Review Issue: Unjustified Opus Model Choice`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Code Review Blocking IO`** (1 nodes): `Code Review Issue: Synchronous File Read Blocking Event Loop`
+- **Thin community `Community 15`** (1 nodes): `Code Review Issue: Synchronous File Read Blocking Event Loop`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Code Review PII Exposure`** (1 nodes): `Code Review Issue: PII Written to Disk with Predictable Names`
+- **Thin community `Community 16`** (1 nodes): `Code Review Issue: PII Written to Disk with Predictable Names`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Code Review File Validation`** (1 nodes): `Code Review Issue: No MIME Type Validation`
+- **Thin community `Community 17`** (1 nodes): `Code Review Issue: No MIME Type Validation`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Evaluation Criteria`** (1 nodes): `Evaluation Criteria (Technical 50%, Architecture 25%, Leadership 25%)`
+- **Thin community `Community 18`** (1 nodes): `Evaluation Criteria (Technical 50%, Architecture 25%, Leadership 25%)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -167,15 +168,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `SMDE Assignment â€” Maritime Manning Agent Use Case` and `Sample Invoice Document (INV-10012, $1699.48)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `SMDE â€” Smart Maritime Document Extractor` connect `Async Pipeline and Assignment Context` to `Architecture Decision Records`?**
+- **Why does `SMDE â€” Smart Maritime Document Extractor` connect `Community 5` to `Community 4`?**
   _High betweenness centrality (0.040) - this node is a cross-community bridge._
-- **Why does `POST /api/extract Endpoint` connect `Architecture Decision Records` to `Async Pipeline and Assignment Context`?**
+- **Why does `POST /api/extract Endpoint` connect `Community 4` to `Community 5`?**
   _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Why does `Anthropic LLM Provider Implementation` connect `LLM Provider Design and Document Taxonomy` to `Architecture Decision Records`?**
+- **Why does `Anthropic LLM Provider Implementation` connect `Community 6` to `Community 4`?**
   _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `repairJson()` (e.g. with `.extract()` and `.repair()`) actually correct?**
   _`repairJson()` has 9 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 3 inferred relationships involving `POST /api/extract Endpoint` (e.g. with `Sync vs Async Default Decision` and `In-Memory Token Bucket Rate Limiting`) actually correct?**
+- **Are the 3 inferred relationships involving `POST /api/extract Endpoint` (e.g. with `Sync vs Async Default Decision` and `Prompt Versioning Strategy`) actually correct?**
   _`POST /api/extract Endpoint` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Extraction`, `Job`, `Session` to the rest of the system?**
   _33 weakly-connected nodes found - possible documentation gaps or missing edges._
